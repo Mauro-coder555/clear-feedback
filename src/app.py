@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+from PySide6.QtCore import QObject, QThread, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -14,6 +15,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QTabWidget,
     QTableWidget,
@@ -23,6 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.ai_analyzer import analyze_feedback_with_ai
 from core.analyzer import analyze_feedback_items
 from core.classifier import classify_feedback_items
 from core.cleaner import clean_feedback_items
@@ -31,12 +34,92 @@ from core.exporter import export_enriched_csv
 from core.importer import get_csv_columns, import_csv
 from core.theme_classifier import classify_feedback_themes
 from report import generate_markdown_report
+from report_ai import generate_ai_markdown_report
 
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = BASE_DIR / "data" / "configs" / "default_categories.json"
 DEFAULT_THEMES_PATH = BASE_DIR / "data" / "configs" / "default_themes.json"
 DEFAULT_EXPORTS_DIR = BASE_DIR / "data" / "exports"
+
+
+class AnalysisWorker(QObject):
+    progress_updated = Signal(str, int)
+    analysis_finished = Signal(object, object)
+    analysis_failed = Signal(str)
+
+    def __init__(
+        self,
+        rows: list[dict],
+        feedback_column: str,
+        remove_duplicates: bool,
+        use_ai: bool,
+        ai_model: str,
+        ai_max_items: int | None,
+    ):
+        super().__init__()
+
+        self.rows = rows
+        self.feedback_column = feedback_column
+        self.remove_duplicates = remove_duplicates
+        self.use_ai = use_ai
+        self.ai_model = ai_model
+        self.ai_max_items = ai_max_items
+
+    def run(self):
+        try:
+            self.progress_updated.emit("Loading categories and local rules...", 5)
+
+            categories = load_categories(DEFAULT_CONFIG_PATH)
+            themes = load_themes(DEFAULT_THEMES_PATH)
+
+            self.progress_updated.emit("Cleaning feedback text...", 15)
+
+            cleaned_items = clean_feedback_items(
+                rows=self.rows,
+                feedback_column=self.feedback_column,
+                remove_duplicates=self.remove_duplicates,
+            )
+
+            self.progress_updated.emit("Classifying feedback with local rules...", 30)
+
+            classified_items = classify_feedback_items(
+                items=cleaned_items,
+                categories=categories,
+                default_category="other",
+            )
+
+            themed_items = classify_feedback_themes(
+                items=classified_items,
+                themes=themes,
+                default_theme="other",
+            )
+
+            self.progress_updated.emit("Building keyword-based summary...", 45)
+
+            result = analyze_feedback_items(themed_items)
+            ai_result = None
+
+            if self.use_ai:
+                self.progress_updated.emit(
+                    "Starting local AI analysis with Ollama...",
+                    50,
+                )
+
+                ai_result = analyze_feedback_with_ai(
+                    items=themed_items,
+                    model=self.ai_model,
+                    max_items=self.ai_max_items,
+                    progress_callback=self.progress_updated.emit,
+                )
+            else:
+                self.progress_updated.emit("Finishing analysis...", 90)
+
+            self.progress_updated.emit("Analysis completed.", 100)
+            self.analysis_finished.emit(result, ai_result)
+
+        except Exception as error:
+            self.analysis_failed.emit(str(error))
 
 
 class MainWindow(QMainWindow):
@@ -46,9 +129,12 @@ class MainWindow(QMainWindow):
         self.current_file_path: Path | None = None
         self.current_rows: list[dict] = []
         self.current_result = None
+        self.current_ai_result = None
+        self.analysis_thread: QThread | None = None
+        self.analysis_worker: AnalysisWorker | None = None
 
         self.setWindowTitle("clear-feedback")
-        self.resize(1250, 800)
+        self.resize(1180, 800)
 
         self.apply_styles()
 
@@ -56,7 +142,7 @@ class MainWindow(QMainWindow):
         self.title_label.setStyleSheet("font-size: 30px; font-weight: bold;")
 
         self.subtitle_label = QLabel(
-            "Turn open-ended feedback into clear themes, categories, and actionable patterns."
+            "Understand what people are asking for, what is missing, and what to improve next."
         )
         self.subtitle_label.setStyleSheet("font-size: 15px; color: #D1D5DB;")
 
@@ -68,7 +154,7 @@ class MainWindow(QMainWindow):
         self.export_tab = QWidget()
 
         self.tabs.addTab(self.import_tab, "1. Import")
-        self.tabs.addTab(self.insights_tab, "2. Insights")
+        self.tabs.addTab(self.insights_tab, "2. Summary")
         self.tabs.addTab(self.review_tab, "3. Review")
         self.tabs.addTab(self.export_tab, "4. Export")
 
@@ -125,13 +211,27 @@ class MainWindow(QMainWindow):
                 color: #9CA3AF;
             }
 
+            QProgressBar {
+                background-color: #1F2937;
+                color: #F9FAFB;
+                border: 1px solid #374151;
+                border-radius: 7px;
+                text-align: center;
+                height: 18px;
+            }
+
+            QProgressBar::chunk {
+                background-color: #2563EB;
+                border-radius: 7px;
+            }
+
             QComboBox {
                 background-color: #1F2937;
                 color: #F9FAFB;
                 border: 1px solid #374151;
                 border-radius: 7px;
                 padding: 6px;
-                min-width: 180px;
+                min-width: 150px;
             }
 
             QComboBox QAbstractItemView {
@@ -204,6 +304,13 @@ class MainWindow(QMainWindow):
                 padding: 12px;
             }
 
+            QFrame#InsightCard {
+                background-color: #172033;
+                border: 1px solid #374151;
+                border-radius: 12px;
+                padding: 16px;
+            }
+
             QFrame#InfoBox {
                 background-color: #1F2937;
                 border: 1px solid #374151;
@@ -228,9 +335,31 @@ class MainWindow(QMainWindow):
         self.remove_duplicates_checkbox = QCheckBox("Remove exact duplicates")
         self.remove_duplicates_checkbox.setChecked(True)
 
+        self.use_ai_checkbox = QCheckBox("Use local AI with Ollama")
+        self.use_ai_checkbox.setChecked(True)
+
+        self.ai_model_selector = QComboBox()
+        self.ai_model_selector.addItems(
+            [
+                "llama3.2:3b",
+                "gemma3:1b",
+                "qwen2.5:3b",
+            ]
+        )
+
+        self.ai_limit_selector = QComboBox()
+        self.ai_limit_selector.addItems(
+            [
+                "Analyze all",
+                "First 50",
+                "First 100",
+                "First 200",
+            ]
+        )
+
         self.analyze_button = QPushButton("Run analysis")
         self.analyze_button.setEnabled(False)
-        self.analyze_button.clicked.connect(self.run_analysis)
+        self.analyze_button.clicked.connect(self.start_analysis)
 
         top_actions_layout = QHBoxLayout()
         top_actions_layout.addWidget(self.import_button)
@@ -241,15 +370,24 @@ class MainWindow(QMainWindow):
         analysis_actions_layout.addWidget(self.column_label)
         analysis_actions_layout.addWidget(self.column_selector)
         analysis_actions_layout.addWidget(self.remove_duplicates_checkbox)
+        analysis_actions_layout.addWidget(self.use_ai_checkbox)
+        analysis_actions_layout.addWidget(QLabel("Model:"))
+        analysis_actions_layout.addWidget(self.ai_model_selector)
+        analysis_actions_layout.addWidget(QLabel("Limit:"))
+        analysis_actions_layout.addWidget(self.ai_limit_selector)
         analysis_actions_layout.addWidget(self.analyze_button)
         analysis_actions_layout.addStretch()
 
         self.import_status_label = QLabel(
-            "Import a CSV file to begin. All processing runs locally on your computer."
+            "Import a CSV file to begin. All processing runs locally."
         )
         self.import_status_label.setStyleSheet(
             "color: #D1D5DB; background-color: #1F2937; padding: 10px; border-radius: 8px;"
         )
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(False)
 
         preview_title = QLabel("CSV preview")
         preview_title.setStyleSheet("font-size: 18px; font-weight: bold;")
@@ -266,92 +404,65 @@ class MainWindow(QMainWindow):
         layout.addLayout(top_actions_layout)
         layout.addLayout(analysis_actions_layout)
         layout.addWidget(self.import_status_label)
+        layout.addWidget(self.progress_bar)
         layout.addWidget(preview_title)
         layout.addWidget(self.preview_table)
 
         self.import_tab.setLayout(layout)
 
     def build_insights_tab(self):
-        self.total_card = self.create_metric_card("Total responses", "0")
-        self.empty_card = self.create_metric_card("Empty responses", "0")
-        self.classified_card = self.create_metric_card("Classified", "0")
-        self.unclassified_card = self.create_metric_card("Unclassified / Other", "0")
+        self.total_card = self.create_metric_card("Responses analyzed", "0")
+        self.covered_card = self.create_metric_card("Covered by insights", "0")
+        self.unassigned_card = self.create_metric_card("Not grouped", "0")
+        self.coverage_card = self.create_metric_card("Coverage", "0%")
 
         metrics_layout = QGridLayout()
         metrics_layout.setSpacing(12)
         metrics_layout.addWidget(self.total_card, 0, 0)
-        metrics_layout.addWidget(self.empty_card, 0, 1)
-        metrics_layout.addWidget(self.classified_card, 0, 2)
-        metrics_layout.addWidget(self.unclassified_card, 0, 3)
+        metrics_layout.addWidget(self.covered_card, 0, 1)
+        metrics_layout.addWidget(self.unassigned_card, 0, 2)
+        metrics_layout.addWidget(self.coverage_card, 0, 3)
 
-        themes_title = QLabel("Top feedback themes")
-        themes_title.setStyleSheet("font-size: 18px; font-weight: bold;")
+        main_title = QLabel("Top 3 things to act on")
+        main_title.setStyleSheet("font-size: 24px; font-weight: bold;")
 
-        self.theme_table = QTableWidget()
-        self.theme_table.setAlternatingRowColors(True)
-        self.theme_table.setColumnCount(5)
-        self.theme_table.setHorizontalHeaderLabels(
-            ["Theme", "Category", "Mentions", "Percentage", "Visual weight"]
+        main_description = QLabel(
+            "These are the most important recurring insights detected from the feedback."
         )
-        self.theme_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        main_description.setStyleSheet("color: #D1D5DB;")
 
-        category_title = QLabel("Category breakdown")
-        category_title.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.top_insights_layout = QVBoxLayout()
+        self.top_insight_cards: list[QFrame] = []
 
-        self.category_table = QTableWidget()
-        self.category_table.setAlternatingRowColors(True)
-        self.category_table.setColumnCount(4)
-        self.category_table.setHorizontalHeaderLabels(
-            ["Category", "Mentions", "Percentage", "Visual weight"]
+        for index in range(3):
+            card = self.create_top_insight_card(index + 1)
+            self.top_insight_cards.append(card)
+            self.top_insights_layout.addWidget(card)
+
+        export_note = QLabel(
+            "For the complete breakdown, representative examples, and methodology, use the Export tab."
         )
-        self.category_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        terms_title = QLabel("Frequent terms")
-        terms_title.setStyleSheet("font-size: 18px; font-weight: bold;")
-
-        self.frequent_terms_table = QTableWidget()
-        self.frequent_terms_table.setAlternatingRowColors(True)
-        self.frequent_terms_table.setColumnCount(2)
-        self.frequent_terms_table.setHorizontalHeaderLabels(["Term", "Count"])
-        self.frequent_terms_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        bottom_layout = QHBoxLayout()
-
-        category_layout = QVBoxLayout()
-        category_layout.addWidget(category_title)
-        category_layout.addWidget(self.category_table)
-
-        terms_layout = QVBoxLayout()
-        terms_layout.addWidget(terms_title)
-        terms_layout.addWidget(self.frequent_terms_table)
-
-        bottom_layout.addLayout(category_layout, 2)
-        bottom_layout.addLayout(terms_layout, 1)
-
-        examples_title = QLabel("Representative examples by theme")
-        examples_title.setStyleSheet("font-size: 18px; font-weight: bold;")
-
-        self.examples_box = QTextEdit()
-        self.examples_box.setReadOnly(True)
-        self.examples_box.setPlaceholderText(
-            "Representative examples will appear here after running the analysis."
+        export_note.setWordWrap(True)
+        export_note.setStyleSheet(
+            "color: #D1D5DB; background-color: #1F2937; "
+            "padding: 12px; border-radius: 8px;"
         )
 
         layout = QVBoxLayout()
         layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(12)
+        layout.setSpacing(14)
         layout.addLayout(metrics_layout)
-        layout.addWidget(themes_title)
-        layout.addWidget(self.theme_table)
-        layout.addLayout(bottom_layout)
-        layout.addWidget(examples_title)
-        layout.addWidget(self.examples_box)
+        layout.addWidget(main_title)
+        layout.addWidget(main_description)
+        layout.addLayout(self.top_insights_layout)
+        layout.addWidget(export_note)
+        layout.addStretch()
 
         self.insights_tab.setLayout(layout)
 
     def build_review_tab(self):
         self.review_info_label = QLabel(
-            "Use this table to audit individual comments. The main insight view is the grouped theme summary."
+            "Use this table only to audit individual comments. The Summary tab is designed for quick decision-making."
         )
         self.review_info_label.setStyleSheet(
             "color: #D1D5DB; background-color: #1F2937; padding: 10px; border-radius: 8px;"
@@ -376,21 +487,26 @@ class MainWindow(QMainWindow):
         export_title.setStyleSheet("font-size: 22px; font-weight: bold;")
 
         export_description = QLabel(
-            "Export the analysis as a Markdown report or as an enriched CSV with categories, themes, and matched keywords."
+            "Export a complete report for deeper review, or export the enriched CSV for further analysis."
         )
         export_description.setStyleSheet("color: #D1D5DB;")
 
-        self.export_markdown_button = QPushButton("Export Markdown report")
-        self.export_markdown_button.setEnabled(False)
-        self.export_markdown_button.clicked.connect(self.export_markdown_report)
+        self.export_ai_markdown_button = QPushButton("Export AI report")
+        self.export_ai_markdown_button.setEnabled(False)
+        self.export_ai_markdown_button.clicked.connect(self.export_ai_markdown_report)
 
         self.export_csv_button = QPushButton("Export enriched CSV")
         self.export_csv_button.setEnabled(False)
         self.export_csv_button.clicked.connect(self.export_csv_file)
 
+        self.export_markdown_button = QPushButton("Export keyword report")
+        self.export_markdown_button.setEnabled(False)
+        self.export_markdown_button.clicked.connect(self.export_markdown_report)
+
         buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(self.export_markdown_button)
+        buttons_layout.addWidget(self.export_ai_markdown_button)
         buttons_layout.addWidget(self.export_csv_button)
+        buttons_layout.addWidget(self.export_markdown_button)
         buttons_layout.addStretch()
 
         self.export_status_box = QTextEdit()
@@ -436,6 +552,44 @@ class MainWindow(QMainWindow):
 
         card.title_label = title_label
         card.value_label = value_label
+
+        return card
+
+    def create_top_insight_card(self, number: int) -> QFrame:
+        card = QFrame()
+        card.setObjectName("InsightCard")
+
+        rank_label = QLabel(f"#{number}")
+        rank_label.setStyleSheet("color: #93C5FD; font-size: 15px; font-weight: bold;")
+
+        title_label = QLabel("Waiting for analysis")
+        title_label.setWordWrap(True)
+        title_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+
+        metric_label = QLabel("0 mentions · 0%")
+        metric_label.setStyleSheet("color: #D1D5DB; font-size: 14px;")
+
+        summary_label = QLabel("Import feedback and run analysis to see this insight.")
+        summary_label.setWordWrap(True)
+        summary_label.setStyleSheet("color: #E5E7EB;")
+
+        action_label = QLabel("")
+        action_label.setWordWrap(True)
+        action_label.setStyleSheet("color: #BFDBFE; font-weight: 600;")
+
+        layout = QVBoxLayout()
+        layout.addWidget(rank_label)
+        layout.addWidget(title_label)
+        layout.addWidget(metric_label)
+        layout.addWidget(summary_label)
+        layout.addWidget(action_label)
+
+        card.setLayout(layout)
+
+        card.title_label = title_label
+        card.metric_label = metric_label
+        card.summary_label = summary_label
+        card.action_label = action_label
 
         return card
 
@@ -509,7 +663,7 @@ class MainWindow(QMainWindow):
 
         self.preview_table.resizeColumnsToContents()
 
-    def run_analysis(self):
+    def start_analysis(self):
         selected_column = self.column_selector.currentText()
 
         if not selected_column:
@@ -520,131 +674,167 @@ class MainWindow(QMainWindow):
             )
             return
 
-        try:
-            categories = load_categories(DEFAULT_CONFIG_PATH)
-            themes = load_themes(DEFAULT_THEMES_PATH)
+        self.set_analysis_running(True)
 
-            cleaned_items = clean_feedback_items(
-                rows=self.current_rows,
-                feedback_column=selected_column,
-                remove_duplicates=self.remove_duplicates_checkbox.isChecked(),
+        self.analysis_thread = QThread()
+        self.analysis_worker = AnalysisWorker(
+            rows=self.current_rows,
+            feedback_column=selected_column,
+            remove_duplicates=self.remove_duplicates_checkbox.isChecked(),
+            use_ai=self.use_ai_checkbox.isChecked(),
+            ai_model=self.ai_model_selector.currentText(),
+            ai_max_items=self.get_ai_max_items(),
+        )
+
+        self.analysis_worker.moveToThread(self.analysis_thread)
+
+        self.analysis_thread.started.connect(self.analysis_worker.run)
+        self.analysis_worker.progress_updated.connect(self.update_analysis_progress)
+        self.analysis_worker.analysis_finished.connect(self.handle_analysis_finished)
+        self.analysis_worker.analysis_failed.connect(self.handle_analysis_failed)
+
+        self.analysis_worker.analysis_finished.connect(self.analysis_thread.quit)
+        self.analysis_worker.analysis_failed.connect(self.analysis_thread.quit)
+        self.analysis_worker.analysis_finished.connect(self.analysis_worker.deleteLater)
+        self.analysis_worker.analysis_failed.connect(self.analysis_worker.deleteLater)
+        self.analysis_thread.finished.connect(self.analysis_thread.deleteLater)
+
+        self.analysis_thread.start()
+
+    def set_analysis_running(self, is_running: bool):
+        self.analyze_button.setEnabled(not is_running)
+        self.import_button.setEnabled(not is_running)
+        self.column_selector.setEnabled(not is_running)
+        self.remove_duplicates_checkbox.setEnabled(not is_running)
+        self.use_ai_checkbox.setEnabled(not is_running)
+        self.ai_model_selector.setEnabled(not is_running)
+        self.ai_limit_selector.setEnabled(not is_running)
+
+        self.progress_bar.setVisible(is_running)
+
+        if is_running:
+            self.progress_bar.setValue(0)
+            self.import_status_label.setText("Starting analysis...")
+
+    def update_analysis_progress(self, message: str, percentage: int):
+        self.import_status_label.setText(message)
+        self.progress_bar.setValue(percentage)
+
+    def handle_analysis_finished(self, result, ai_result):
+        self.current_result = result
+        self.current_ai_result = ai_result
+
+        self.update_summary(result)
+        self.update_review_table(result)
+        self.enable_exports()
+
+        self.import_status_label.setText("Analysis completed.")
+        self.progress_bar.setValue(100)
+        self.set_analysis_running(False)
+
+        self.tabs.setCurrentWidget(self.insights_tab)
+
+        self.analysis_thread = None
+        self.analysis_worker = None
+
+    def handle_analysis_failed(self, error_message: str):
+        self.set_analysis_running(False)
+        self.progress_bar.setVisible(False)
+
+        QMessageBox.critical(
+            self,
+            "Analysis error",
+            f"Could not analyze feedback.\n\n{error_message}",
+        )
+
+        self.analysis_thread = None
+        self.analysis_worker = None
+
+    def get_ai_max_items(self) -> int | None:
+        selected_limit = self.ai_limit_selector.currentText()
+
+        if selected_limit == "First 50":
+            return 50
+
+        if selected_limit == "First 100":
+            return 100
+
+        if selected_limit == "First 200":
+            return 200
+
+        return None
+
+    def update_summary(self, result):
+        if self.current_ai_result is not None:
+            self.update_ai_summary()
+        else:
+            self.update_keyword_summary(result)
+
+    def update_ai_summary(self):
+        ai_result = self.current_ai_result
+
+        self.total_card.value_label.setText(str(ai_result.total_responses))
+        self.covered_card.value_label.setText(str(ai_result.assigned_responses))
+        self.unassigned_card.value_label.setText(str(ai_result.unassigned_responses))
+        self.coverage_card.value_label.setText(f"{ai_result.coverage_percentage}%")
+
+        themes = ai_result.themes
+
+        for index, card in enumerate(self.top_insight_cards):
+            if index >= len(themes):
+                card.title_label.setText("No additional recurring insight")
+                card.metric_label.setText("")
+                card.summary_label.setText("")
+                card.action_label.setText("")
+                continue
+
+            theme = themes[index]
+
+            card.title_label.setText(theme.label)
+            card.metric_label.setText(
+                f"{theme.mentions} mentions · {theme.percentage}% · {theme.sentiment}"
             )
+            card.summary_label.setText(theme.summary)
+            card.action_label.setText(f"Recommended action: {theme.suggested_action}")
 
-            classified_items = classify_feedback_items(
-                items=cleaned_items,
-                categories=categories,
-                default_category="other",
-            )
-
-            themed_items = classify_feedback_themes(
-                items=classified_items,
-                themes=themes,
-                default_theme="other",
-            )
-
-            result = analyze_feedback_items(themed_items)
-            self.current_result = result
-
-            self.update_insights(result)
-            self.update_review_table(result)
-            self.enable_exports()
-
-            self.tabs.setCurrentWidget(self.insights_tab)
-
-        except Exception as error:
-            QMessageBox.critical(
-                self,
-                "Analysis error",
-                f"Could not analyze feedback.\n\n{error}",
-            )
-
-    def update_insights(self, result):
+    def update_keyword_summary(self, result):
         self.total_card.value_label.setText(str(result.total_responses))
-        self.empty_card.value_label.setText(str(result.empty_responses))
-        self.classified_card.value_label.setText(str(result.classified_responses))
-        self.unclassified_card.value_label.setText(str(result.unclassified_responses))
+        self.covered_card.value_label.setText(str(result.classified_responses))
+        self.unassigned_card.value_label.setText(str(result.unclassified_responses))
 
-        self.update_theme_table(result)
-        self.update_category_table(result)
-        self.update_frequent_terms_table(result)
-        self.update_examples_box(result)
+        coverage = (
+            round((result.classified_responses / result.total_responses) * 100, 2)
+            if result.total_responses
+            else 0
+        )
 
-    def update_theme_table(self, result):
+        self.coverage_card.value_label.setText(f"{coverage}%")
+
         sorted_themes = sorted(
             result.theme_counts.items(),
             key=lambda item: item[1],
             reverse=True,
         )
 
-        self.theme_table.clearContents()
-        self.theme_table.setRowCount(len(sorted_themes))
+        for index, card in enumerate(self.top_insight_cards):
+            if index >= len(sorted_themes):
+                card.title_label.setText("No additional recurring insight")
+                card.metric_label.setText("")
+                card.summary_label.setText("")
+                card.action_label.setText("")
+                continue
 
-        for row_index, (theme, count) in enumerate(sorted_themes):
-            label = result.theme_labels.get(theme, theme)
-            category = result.theme_categories.get(theme, "other")
-            percentage = result.theme_percentages.get(theme, 0)
-            visual_bar = self.build_text_bar(percentage)
+            theme_name, count = sorted_themes[index]
+            label = result.theme_labels.get(theme_name, theme_name)
+            category = result.theme_categories.get(theme_name, "other")
+            percentage = result.theme_percentages.get(theme_name, 0)
 
-            self.theme_table.setItem(row_index, 0, QTableWidgetItem(label))
-            self.theme_table.setItem(row_index, 1, QTableWidgetItem(category))
-            self.theme_table.setItem(row_index, 2, QTableWidgetItem(str(count)))
-            self.theme_table.setItem(row_index, 3, QTableWidgetItem(f"{percentage}%"))
-            self.theme_table.setItem(row_index, 4, QTableWidgetItem(visual_bar))
-
-    def update_category_table(self, result):
-        sorted_categories = sorted(
-            result.category_counts.items(),
-            key=lambda item: item[1],
-            reverse=True,
-        )
-
-        self.category_table.clearContents()
-        self.category_table.setRowCount(len(sorted_categories))
-
-        for row_index, (category, count) in enumerate(sorted_categories):
-            percentage = result.category_percentages.get(category, 0)
-            visual_bar = self.build_text_bar(percentage)
-
-            self.category_table.setItem(row_index, 0, QTableWidgetItem(category))
-            self.category_table.setItem(row_index, 1, QTableWidgetItem(str(count)))
-            self.category_table.setItem(row_index, 2, QTableWidgetItem(f"{percentage}%"))
-            self.category_table.setItem(row_index, 3, QTableWidgetItem(visual_bar))
-
-    def update_frequent_terms_table(self, result):
-        self.frequent_terms_table.clearContents()
-        self.frequent_terms_table.setRowCount(len(result.frequent_terms))
-
-        for row_index, (term, count) in enumerate(result.frequent_terms):
-            self.frequent_terms_table.setItem(row_index, 0, QTableWidgetItem(term))
-            self.frequent_terms_table.setItem(row_index, 1, QTableWidgetItem(str(count)))
-
-    def update_examples_box(self, result):
-        examples_text = []
-
-        sorted_themes = sorted(
-            result.representative_theme_examples.items(),
-            key=lambda item: result.theme_counts.get(item[0], 0),
-            reverse=True,
-        )
-
-        for theme, examples in sorted_themes:
-            label = result.theme_labels.get(theme, theme)
-            category = result.theme_categories.get(theme, "other")
-            count = result.theme_counts.get(theme, 0)
-            percentage = result.theme_percentages.get(theme, 0)
-
-            examples_text.append(label.upper())
-            examples_text.append("-" * len(label))
-            examples_text.append(f"Category: {category}")
-            examples_text.append(f"Mentions: {count} ({percentage}%)")
-            examples_text.append("")
-
-            for example in examples:
-                examples_text.append(f"• {example}")
-
-            examples_text.append("")
-
-        self.examples_box.setPlainText("\n".join(examples_text))
+            card.title_label.setText(label)
+            card.metric_label.setText(f"{count} mentions · {percentage}% · {category}")
+            card.summary_label.setText(
+                "Detected with keyword rules. Enable local AI for better summaries and suggested actions."
+            )
+            card.action_label.setText("")
 
     def update_review_table(self, result):
         items = result.items
@@ -694,8 +884,10 @@ class MainWindow(QMainWindow):
     def enable_exports(self):
         self.export_markdown_button.setEnabled(True)
         self.export_csv_button.setEnabled(True)
+        self.export_ai_markdown_button.setEnabled(self.current_ai_result is not None)
+
         self.export_status_box.setPlainText(
-            "Analysis completed. You can now export the Markdown report or enriched CSV."
+            "Analysis completed. Export the full report if you want detailed examples and methodology."
         )
 
     def export_markdown_report(self):
@@ -711,7 +903,7 @@ class MainWindow(QMainWindow):
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export Markdown report",
+            "Export keyword Markdown report",
             str(DEFAULT_EXPORTS_DIR / "feedback_report.md"),
             "Markdown files (*.md)",
         )
@@ -721,18 +913,55 @@ class MainWindow(QMainWindow):
 
         try:
             generate_markdown_report(self.current_result, file_path)
-            self.append_export_log(f"Markdown report exported: {file_path}")
+            self.append_export_log(f"Keyword report exported: {file_path}")
             QMessageBox.information(
                 self,
                 "Export completed",
-                "Markdown report exported successfully.",
+                "Keyword report exported successfully.",
             )
 
         except Exception as error:
             QMessageBox.critical(
                 self,
                 "Export error",
-                f"Could not export Markdown report.\n\n{error}",
+                f"Could not export keyword report.\n\n{error}",
+            )
+
+    def export_ai_markdown_report(self):
+        if self.current_ai_result is None:
+            QMessageBox.warning(
+                self,
+                "No AI results",
+                "Run an analysis with local AI enabled before exporting an AI report.",
+            )
+            return
+
+        DEFAULT_EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export AI Markdown report",
+            str(DEFAULT_EXPORTS_DIR / "ai_feedback_report.md"),
+            "Markdown files (*.md)",
+        )
+
+        if not file_path:
+            return
+
+        try:
+            generate_ai_markdown_report(self.current_ai_result, file_path)
+            self.append_export_log(f"AI report exported: {file_path}")
+            QMessageBox.information(
+                self,
+                "Export completed",
+                "AI report exported successfully.",
+            )
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Export error",
+                f"Could not export AI report.\n\n{error}",
             )
 
     def export_csv_file(self):
@@ -781,13 +1010,6 @@ class MainWindow(QMainWindow):
             new_text = message
 
         self.export_status_box.setPlainText(new_text)
-
-    def build_text_bar(self, percentage: float) -> str:
-        total_blocks = 20
-        filled_blocks = round((percentage / 100) * total_blocks)
-        empty_blocks = total_blocks - filled_blocks
-
-        return "█" * filled_blocks + "░" * empty_blocks
 
 
 def run_app():
