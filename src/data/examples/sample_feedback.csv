@@ -1,48 +1,31 @@
 id,feedback,user_type,source
-1,Segmentar mejor el público. Practicamente no aprendí nada nuevo. La mayoria de lo explicado son cosas que uno autodescubre al probar la herramienta los primeros dias.,student,course survey
-2,,student,course survey
-3,"Segmentar mejor el público. Lo visto en Claude: Chat, Cowork y Code son cosas muy básicas que uno las aprende los primeros días probando la herramienta o con cualquier video.",student,support form
-4,"agradezco el Beta continua al dar el volantazo cuando apareció Claude, ya que el modelo de Verdi Flows para mi caso no es nada aplicable y Claude puede desarrollar y ayudarme con situaciones mucho mas complejas con una mirada mucho mas estrategica",student,course survey
-5,,lead,pricing form
-6,Que las explicaciones sean más básicas,student,bug report
-7,"En los talleres de activacion de cowork y code, se complejiza la tematica, y llegado un punto me perdí, no pude seguir lo que se estaba explicando con total conocimiento.",student,course survey
-8,"En la etapa inicial de lanzamiento del programa, de nuevo faltó brindar más claridad (sobre todo para las personas con poca experiencia en el desarrollo de estas iniciativas) respecto al alcance y la complejidad que debían considerarse a la hora de seleccionar los proyectos a trabajar durante el programa. Mejora: comunicar los puntos a considerar para la selección. 
-Los assessments no evaluaban puntos que realmente sirvieran para determinar el nivel de conocimientos de la gente en este tipo de herramientas e implementaciones, como para ubicarlas en los grupos de trabajo correspondientes, y justo eso se vio después cuando llegaron tantos pedidos de reacomodamiento. Mejora: revisar y ajustar los assessments.
-Los primeros readings y hands-on nuevamente se enfocaron únicamente en Verdi Flows y eso derivaba en que los equipos no lograran pensar sus soluciones en otras herramientas más que en esa (por más de que en muchas ocasiones sí les convenía rotar), porque para esas herramientas no había material o capacitaciones. Mejora: sumar capacitaciones de todas las herramientas que ofrece Meli. 
-Los AIAL tuvimos pocas capacitaciones adicionales previas al inicio del ciclo de Office Hours (creo que habían sido solo 2) y en ocasiones esa falta de preparación se sintió al no poder ayudar con ciertas dudas técnicas de los grupos, que al final nos tuvimos que llevar para validar con alguien más. Mejora: brindar más capacitaciones para los AIAL. 
-Las últimas hands-on de Claude estuvieron buenísimas, pero los colaboradores ""externos"" ya no pudieron aprovecharlas por no tener acceso a la licencia. ",student,course survey
-9,Creo que la parte de claude fue la mejor del programa. La sesiones en vivo con ejemplos ayudan mucho a aterrizar los procesos y nivelar. ,student,course survey
-10,Mayores casos prácticos aplicables a situaciones reales que se puedan tomar de personas en particular,student,support form
-11,"Dado que la IA evoluciona constantemente, sería ideal que las capacitaciones no se basen en una única herramienta, sino en varias que nos permitan decidir qué es lo que realmente se adapta mejor a lo que queremos construir.",student,bug report
-12,,student,course survey
-13,,student,feature request
-14,,student,course survey
-15,,student,course survey
-16,,student,course survey
-17,,student,course survey
-18,Mas focos por area y no generales,student,course survey
-19,Sesiones con menor cantidad de personas,student,bug report
-20,"que los cursos no sean mayores a 1 hora, me sirvio mucho las office hours",student,course survey
-21,Sugiero mantener la dinámica y no hacer las sesiones como fueron las primeras.,student,course survey
-22,Tal vez grupos más reducidos,student,bug report
-23,,lead,pricing form
-24,Ninguna,student,course survey
-25,"Una sesion por semana y teniendo que leer material, es muy dificil adaptarlo a ""Meli"", creo que en el caso de sesiones, es mejor quincenal y dejar una semana en el medio para leer el material, sino es imposible seguirlo, y se pierde el hilo. Las sesiones de Office Hours con tantas personas, preguntando cosas tan distintas, era dificil el seguimiento y priorizacion.",student,course survey
-26,,student,feature request
-27,me gusto mucho en general. pero sobre todo el apoyo del tutor para mi fue clave,student,support form
-28,todo bien,student,course survey
-29,me parece que el programa estaba muy bien diseñado para fury. la integración de claude debió generar una prorroga y un rediseño pero no fue así,student,course survey
-30,"La verdad es que nos quedamos con una sensación de preocupación/decepción tras el espacio. Sentimos que el contenido está muy orientado a desarrolladores, y en el equipo de Finanzas necesitamos ritmos diferentes, más tiempo y mayor nivel de detalle. Entendemos perfectamente que hay una parte importante de autogestión en el proceso, pero nos encontramos con trabas muy complejas; por ejemplo, en las sesiones de Claude, casi nadie logró conectar las aplicaciones cuando pasamos a la etapa de Cowork en adelante.
-
-Vimos que la dinámica actual es mostrar los procesos rápidamente en la llamada y sugerir revisar la grabación. Sin embargo, en el día a día surgen mil casuísticas particulares y este formato no nos está resultando una solución efectiva; de hecho, admito que desmotivó bastante al equipo respecto al uso de las herramientas. Al perdernos en los primeros pasos, la mayoría quedaba fuera de la clase y ya no podía seguir el hilo.
-
-Como propuesta para que esto realmente funcione, ¿existirá la posibilidad de armar cursos más cortos, enfocados en el seteo inicial y con ejercicios menos complejos o más generales? Creo que eso nos ayudaría a todos a entender el verdadero potencial de las herramientas sin frustrarnos en el camino.",student,course survey
-,"Clasificar mejor a los usuarios, valiéndose de evaluaciones prácticas",,
-,"Simplemente creo que querer abarcarlo todo para una poblacion tan grande y con conocimientos tecnicos tan diferentes a los de quienes dieron las clases, con muchas cuestiones tecnicas que desenfocaban, dificultó mucho la experiencia. Algunas oportunidades: 1) la parte del curso de verdi flow estuvo centrado en la automatizacion de tareas muy transaccionales, que hoy seguramente hagan principalemente analistas/especialistas en MELI. Como Sr Director los ejemplos no me sirven para automatizar mi dia a dia, sin embargo el grado de detalle de los reads y videos para poder avanzar con el curso fue extremo y requirio un tiempo muy valioso que no pude incluir en mi rutina laboral y tuve que dejarlo para fines de semana u horas nocturnas para poder cumplir y dar el ejemplo. 2) A partir del cambio de programa y cuando empezaron a explicar Claude, se notaba que el foco cambió y ya no hubo sesiones hands on, el objetivo parecia que era que el instructor terminara a tiempo la demo, cuando alguien preguntaba algo, se repetia una y otra vez que la sesion quedaria guardada y del espacio para preguntas al final. Esto genero mucha frustracion en los equipos y quejas ya que sí o sí, habia que invertir otras dos horas al menos para poder volver a ver el video y replicar por uno mismo. 3) La sesion de 3 de Claude, fue durisima, desde las muchas dificultades tecnicas para conectarnos, los instructivos paso a paso que no eran completos ni faciles de seguir. (Como podríamos saber nosotros que tabla usar de big query?) Creo que los instructores tienen un conocimiento tecnico muy diferente al publico y si bien tienen la mejor predisposición, no logran muchas veces transmitirlo en forma asertiva. Aun no encontre desde donde conectarme a la terminal de Claude code en la que se baso toda la clase 3. Aun habiendo recibido la ayuda de Carlos para conectar Github sigo sin poder conectar los conectores del plugin de conversational analytics. Muchas son dificultades de aprender algo nuevo y complejo para poder luego ahorrar tiempo, y esta bien pasar por esa etapa, pero creo que mas que correr tras cumplir los deadlines, habria que haberle dado una vuelta antes de seguir con los cursos de Claude en automatico.
-.",,
-,,,
-,,,
-,"Creo que se encasillo mucho en Verdi Flows todo el programa y una vez que salio Claude quedo bastante obsoleto. Se adaptaron a este cambio, pero tendria que haber sido un poco antes. 
-La carga del todo el programa tambien se sintio un poco tediosa, por mas que algunas clases estuvieron buenas. ",,
-,"Evaluar la no participación activa en cuanto a voz (micrófonos de los participantes) cuando se trata de trainings/explicaciones en vivo, solo dejar el chat para consultas/dudas ya que se volvía medio tedioso y se perdía el foco porque interrumpían constantemente.",,
-,Quizas volver hacer foco en el correcto uso de las herramientas,,
+1,"The onboarding was clear, but I would like more practical examples.","new user","post-course survey"
+2,"I need more hands-on exercises after each module.","student","post-course survey"
+3,"The platform is easy to navigate and the dashboard is useful.","student","product feedback"
+4,"Some explanations felt too fast and I had to rewatch the material.","student","post-course survey"
+5,"The support team answered quickly and helped me solve my issue.","student","support survey"
+6,"I would like a better way to track my progress.","student","feature request"
+7,"The course was useful, but some topics need more depth.","student","post-course survey"
+8,"The examples were too basic for people with previous experience.","advanced user","post-course survey"
+9,"I had trouble logging in during the first session.","student","technical feedback"
+10,"The live sessions were helpful, especially when real cases were shown.","student","post-course survey"
+11,"I think the program should separate beginners and advanced users.","student","post-course survey"
+12,"The assignments were interesting, but the deadlines felt too tight.","student","post-course survey"
+13,"I would like more real-world projects instead of only guided exercises.","student","post-course survey"
+14,"The content was well organized and easy to follow.","student","post-course survey"
+15,"Some parts of the platform loaded slowly.","student","technical feedback"
+16,"The price is fair, but the value would be higher with more practice materials.","customer","pricing feedback"
+17,"I liked the structure, but the sessions could be shorter.","student","post-course survey"
+18,"The explanations were clear and the examples helped a lot.","student","post-course survey"
+19,"I was confused about what was expected in the final project.","student","post-course survey"
+20,"The mentors were helpful, but response time could improve.","student","support survey"
+21,"I would like downloadable summaries after each lesson.","student","feature request"
+22,"The platform looks clean, but finding previous lessons was difficult.","student","product feedback"
+23,"Some exercises were repetitive and did not feel challenging.","student","post-course survey"
+24,"The program helped me understand the basics and apply them at work.","student","post-course survey"
+25,"","student","post-course survey"
+26,"The onboarding was clear, but I would like more practical examples.","new user","post-course survey"
+27,"I need more examples related to real business situations.","student","post-course survey"
+28,"The technical setup instructions were not detailed enough.","student","technical feedback"
+29,"Great experience overall, especially the practical sessions.","student","post-course survey"
+30,"The course should include a short diagnostic test before assigning groups.","student","post-course survey"
