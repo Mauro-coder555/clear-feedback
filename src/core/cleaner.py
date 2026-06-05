@@ -1,7 +1,7 @@
 import re
 from typing import Any
 
-from src.models import FeedbackItem
+from models import FeedbackItem
 
 
 def normalize_text(value: Any) -> str:

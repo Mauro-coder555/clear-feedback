@@ -1,0 +1,207 @@
+{
+  "themes": [
+    {
+      "name": "audience-segmentation",
+      "label": "Audience segmentation issues",
+      "category": "content",
+      "description": "Users mention that the program should better segment participants by knowledge level, role, or needs.",
+      "keywords": [
+        "segmentar",
+        "segmentacion",
+        "segmentación",
+        "clasificar",
+        "clasificar mejor",
+        "usuarios",
+        "público",
+        "publico",
+        "nivel",
+        "niveles",
+        "grupos de trabajo",
+        "reacomodamiento",
+        "nivelar"
+      ]
+    },
+    {
+      "name": "content-too-basic",
+      "label": "Content feels too basic",
+      "category": "content",
+      "description": "Users feel that the content was too basic or did not provide enough new learning.",
+      "keywords": [
+        "básico",
+        "basico",
+        "básicas",
+        "basicas",
+        "no aprendí nada nuevo",
+        "no aprendi nada nuevo",
+        "cosas que uno autodescubre",
+        "primeros días",
+        "primeros dias",
+        "muy básico",
+        "muy basico"
+      ]
+    },
+    {
+      "name": "need-practical-cases",
+      "label": "Need more practical real-world cases",
+      "category": "exercises",
+      "description": "Users ask for more practical, applicable, real-world examples or cases.",
+      "keywords": [
+        "casos prácticos",
+        "casos practicos",
+        "situaciones reales",
+        "aplicables",
+        "aplicable",
+        "práctico",
+        "practico",
+        "práctica",
+        "practica",
+        "hands-on",
+        "ejemplos reales",
+        "proyectos reales"
+      ]
+    },
+    {
+      "name": "assessment-quality",
+      "label": "Assessments do not reflect real user level",
+      "category": "exercises",
+      "description": "Users mention that evaluations or assessments do not properly measure knowledge or readiness.",
+      "keywords": [
+        "assessment",
+        "assessments",
+        "evaluación",
+        "evaluacion",
+        "evaluaciones",
+        "evaluaban",
+        "evaluar",
+        "nivel de conocimientos",
+        "conocimientos",
+        "pruebas prácticas",
+        "pruebas practicas"
+      ]
+    },
+    {
+      "name": "project-scope-clarity",
+      "label": "Lack of clarity about project scope",
+      "category": "clarity",
+      "description": "Users mention unclear expectations around project scope, complexity, or selection criteria.",
+      "keywords": [
+        "alcance",
+        "complejidad",
+        "seleccionar los proyectos",
+        "selección",
+        "seleccion",
+        "criterios",
+        "expectativas",
+        "claridad",
+        "puntos a considerar"
+      ]
+    },
+    {
+      "name": "live-session-focus",
+      "label": "Live sessions lose focus",
+      "category": "clarity",
+      "description": "Users mention interruptions, lack of focus, or noisy participation during live sessions.",
+      "keywords": [
+        "micrófonos",
+        "microfonos",
+        "interrumpían",
+        "interrumpian",
+        "interrupciones",
+        "tedioso",
+        "perdía el foco",
+        "perdia el foco",
+        "sesiones en vivo",
+        "trainings",
+        "explicaciones en vivo"
+      ]
+    },
+    {
+      "name": "tool-coverage",
+      "label": "Need training across more tools",
+      "category": "content",
+      "description": "Users ask for training across several tools instead of focusing on only one.",
+      "keywords": [
+        "única herramienta",
+        "unica herramienta",
+        "varias herramientas",
+        "otras herramientas",
+        "todas las herramientas",
+        "verdi flows",
+        "claude",
+        "herramientas",
+        "capacitaciones de todas"
+      ]
+    },
+    {
+      "name": "aial-preparation",
+      "label": "AIALs need more preparation",
+      "category": "support",
+      "description": "Users mention that AIALs or facilitators needed more preparation before supporting others.",
+      "keywords": [
+        "aial",
+        "aials",
+        "pocas capacitaciones",
+        "falta de preparación",
+        "falta de preparacion",
+        "dudas técnicas",
+        "dudas tecnicas",
+        "office hours",
+        "validar con alguien más",
+        "validar con alguien mas"
+      ]
+    },
+    {
+      "name": "license-access-limitations",
+      "label": "Tool access or license limitations",
+      "category": "platform",
+      "description": "Users mention that lack of access or licenses limited the value of the training.",
+      "keywords": [
+        "licencia",
+        "licencias",
+        "acceso",
+        "no tener acceso",
+        "sin acceso",
+        "colaboradores externos",
+        "no pudieron aprovechar"
+      ]
+    },
+    {
+      "name": "positive-claude-experience",
+      "label": "Positive Claude experience",
+      "category": "positive-feedback",
+      "description": "Users positively mention Claude as useful, strategic, or valuable.",
+      "keywords": [
+        "claude fue la mejor",
+        "claude",
+        "buenísima",
+        "buenisima",
+        "mucho más estratégica",
+        "mucho mas estrategica",
+        "aterrizar los procesos",
+        "mejor del programa"
+      ]
+    },
+    {
+      "name": "tutor-support-value",
+      "label": "Tutor support was valuable",
+      "category": "support",
+      "description": "Users mention tutor support as helpful or key.",
+      "keywords": [
+        "apoyo del tutor",
+        "tutor",
+        "soporte",
+        "acompañamiento",
+        "acompanamiento",
+        "clave",
+        "ayuda"
+      ]
+    },
+    {
+      "name": "other",
+      "label": "Other feedback",
+      "category": "other",
+      "description": "Feedback that does not match any configured theme.",
+      "keywords": []
+    }
+  ]
+}

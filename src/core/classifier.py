@@ -1,4 +1,4 @@
-from src.models import Category, FeedbackItem
+from models import Category, FeedbackItem
 
 
 def classify_feedback_items(
