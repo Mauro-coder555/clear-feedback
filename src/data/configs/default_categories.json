@@ -1,0 +1,49 @@
+{
+  "categories": [
+    {
+      "name": "content",
+      "description": "Feedback related to course content, lessons, or learning material.",
+      "keywords": ["content", "lesson", "module", "material", "topic"]
+    },
+    {
+      "name": "platform",
+      "description": "Feedback related to the platform, app, interface, or navigation.",
+      "keywords": ["platform", "app", "dashboard", "interface", "navigation"]
+    },
+    {
+      "name": "support",
+      "description": "Feedback related to help, mentors, tutors, or support experience.",
+      "keywords": ["support", "help", "mentor", "tutor", "response"]
+    },
+    {
+      "name": "exercises",
+      "description": "Feedback related to exercises, practice, assignments, or challenges.",
+      "keywords": ["exercise", "exercises", "practice", "assignment", "challenge"]
+    },
+    {
+      "name": "clarity",
+      "description": "Feedback related to clarity, explanations, or understanding.",
+      "keywords": ["clear", "clarity", "confusing", "confused", "explanation"]
+    },
+    {
+      "name": "technical-issues",
+      "description": "Feedback related to bugs, errors, access problems, or crashes.",
+      "keywords": ["bug", "error", "crash", "login", "loading", "access"]
+    },
+    {
+      "name": "positive-feedback",
+      "description": "Positive comments about the experience.",
+      "keywords": ["great", "excellent", "useful", "helpful", "easy", "good"]
+    },
+    {
+      "name": "negative-feedback",
+      "description": "Negative comments about the experience.",
+      "keywords": ["bad", "poor", "difficult", "frustrating", "slow"]
+    },
+    {
+      "name": "other",
+      "description": "Feedback that does not match any configured category.",
+      "keywords": []
+    }
+  ]
+}
